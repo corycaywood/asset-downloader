@@ -1,0 +1,17 @@
+{
+  "name": "AssetDownloader",
+  "version": "1.0.0",
+  "description": "Download images and fonts from stylesheets",
+  "main": "main.js",
+  "dependencies": {
+    "archiver": "^0.16.0",
+    "body-parser": "^1.14.1",
+    "express": "^4.13.3",
+    "mkdirp": "^0.5.1",
+    "rimraf": "^2.4.3"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "author": "Cory Caywood",
+  "license": "JSON"
+}
