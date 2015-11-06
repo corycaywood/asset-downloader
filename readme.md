@@ -4,7 +4,7 @@ This project is a Node.js app that will allow a user to download the image and f
 
 ## How to Run
 
-- You will need to have Node.js[https://nodejs.org] installed.
+- You will need to have  [Node.js](https://nodejs.org) installed.
 - `npm install` to install the project dependencies
 - `node main.js` to run
 
