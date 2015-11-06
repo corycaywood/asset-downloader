@@ -15,7 +15,7 @@ var http = require('http'),
 	FONT_DIRECTORY = "fonts",
 	IMAGE_DIRECTORY = "images",
 	ZIP_DIRECTORY = "zip",
-	REGEX = /url\([^\)]*?(\.jpg|\.png|\.gif|\.eot|\.woff|\.woff2|\.svg|\.otf|\.ttf)\)/ig;
+	REGEX = /url\([^\)]*?(\.jpg|\.png|\.gif|\.eot|\.woff|\.woff2|\.svg|\.otf|\.ttf)\s?'?\s?\)/ig;
 
 function downloadFromCssFile(URL_STRING, folder){
 	var BASE_URL = url.parse(URL_STRING).host,
@@ -45,7 +45,11 @@ function downloadFromCssFile(URL_STRING, folder){
 		//On End
 		res.on('end', function(){
 			var resources = cssdata.match(REGEX);
-			downloadResource(resources.length - 1);
+			if (resources == null) {
+				eventEmitter.emit('noResources' + folder);
+			} else {
+				downloadResource(resources.length - 1);
+			}
 			
 			//Download Resource function
 			function downloadResource(count){
@@ -61,7 +65,7 @@ function downloadFromCssFile(URL_STRING, folder){
 				console.log(host + _path + resource);
 	
 				//HTTP request
-				var req = http.get(options, function(res){
+				http.get(options, function(res){
 					var resourcedata = '',
 						resourceName = path.basename(resource);
 					res.setEncoding('binary');
@@ -74,12 +78,12 @@ function downloadFromCssFile(URL_STRING, folder){
 					//On End
 					res.on('end', function(){
 						//Save to correct folder
-						extName = path.extname(resourceName);
-						resourceFolder = (extName == '.jpg' || extName == '.gif' || extName == '.png') ? IMAGE_DIRECTORY : FONT_DIRECTORY; 
+						var extName = path.extname(resourceName),
+							resourceFolder = (extName == '.jpg' || extName == '.gif' || extName == '.png') ? IMAGE_DIRECTORY : FONT_DIRECTORY; 
 						//Write file
 						fs.writeFile(path.join(folder, resourceFolder, resourceName), resourcedata, 'binary', function(err){
 							if (err) throw err
-							console.log('File saved:' + resourceName);
+							console.log('File saved: ' + host + _path + resource);
 							//Recursively download - so it will download one at a time
 							if (count > 0) {
 								downloadResource(count - 1)
@@ -125,8 +129,6 @@ app.post('/getResourcesFromUrl', function(req,res){
 		downloadFromCssFile(stylesheetUrl, folderName);
 	}
 	
-
-	
 	//Zip resources when finished
 	eventEmitter.on('doneDownloading' + folderName, function(){
 		saveZip(folderName);
@@ -142,6 +144,11 @@ app.post('/getResourcesFromUrl', function(req,res){
 		res.end(JSON.stringify(response));
 		//Delete resource directory
 		rimraf.sync(path.join(__dirname, folderName));
+	});
+	
+	//Error if no resources to download
+	eventEmitter.on('noResources' + folderName, function(){
+		res.status(500).send({ error: 'No resources to download.' });
 	});
 });
 
