@@ -49,7 +49,7 @@ function downloadFromCssFile(URL_STRING, folder){
 			
 			//Download Resource function
 			function downloadResource(count){
-				var resource = resources[count].replace(/url\((.*?)\)/g, '$1').replace(/background(\s)*\:(\s)*/g, ""),
+				var resource = resources[count].replace(/url\((.*?)\)/g, '$1').replace(/\'/g, "").replace(/\"/g, "").replace(/\s/g, ""),
 					host = url.parse(resource).host != null ? url.parse(resource).host : BASE_URL,
 					_path = resource.match(/^\//) != null || url.parse(resource).protocol != null ? "" : PATH;
 				var options = {

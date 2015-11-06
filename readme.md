@@ -8,4 +8,4 @@ This project is a Node.js app that will allow a user to download the image and f
 - `npm install` to install the project dependencies
 - `node main.js` to run
 
-You can then go to `http://localhost:PORT` in your browser too access the Asset Downloader front end.
+You can then go to `http://localhost:PORT` in your browser to access the Asset Downloader front end.
