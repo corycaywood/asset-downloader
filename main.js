@@ -15,7 +15,7 @@ var http = require('http'),
 	FONT_DIRECTORY = "fonts",
 	IMAGE_DIRECTORY = "images",
 	ZIP_DIRECTORY = "zip",
-	REGEX = /url\([^\)]*?(\.jpg|\.png|\.gif|\.eot|\.woff|\.woff2|\.svg|\.otf|\.ttf)\s?'?"?\s?\)/ig;
+	REGEX = /url\([^\)]*?(\.jpg|\.png|\.gif|\.eot|\.woff|\.woff2|\.svg|\.otf|\.ttf)[^\)]*?\)/ig;
 
 function downloadFromCssFile(url_string, folder){
 	var url_base = url.parse(url_string).host,
@@ -69,7 +69,7 @@ function saveZip(folder){
 function downloadResources(resources, length, url_base, path_name, folder){
 	downloadResource(length);
 	function downloadResource(count) {
-		var resource = resources[count].replace(/url\((.*?)\)/g, '$1').replace(/\'/g, "").replace(/\"/g, "").replace(/\s/g, ""),
+		var resource = resources[count].replace(/url\((.*?)\)/g, '$1').replace(/'/g, "").replace(/"/g, "").replace(/\s/g, ""),
 			host = url.parse(resource).host != null ? url.parse(resource).host : url_base,
 			_path = resource.match(/^\//) != null || url.parse(resource).protocol != null ? "" : path_name;
 		var options = {
@@ -83,7 +83,7 @@ function downloadResources(resources, length, url_base, path_name, folder){
 		//HTTP request
 		http.get(options, function(res){
 			var resourcedata = '',
-				resourceName = path.basename(resource);
+				resourceName = url.parse(path.basename(resource)).pathname;
 			res.setEncoding('binary');
 	
 			//On Data
@@ -123,6 +123,8 @@ app.post('/getResourcesFromUrl', function(req,res){
 		folderName = DOWNLOAD_FOLDER_BASE + Date.now();
 	//Fix stylesheet URL if missing protocol
 	stylesheetUrl = (url.parse(stylesheetUrl).protocol == null) ? "http://" + stylesheetUrl : stylesheetUrl;
+	//Fix stylesheet URL - Remove query string
+	stylesheetUrl = "http://" + url.parse(stylesheetUrl).host + url.parse(stylesheetUrl).pathname;
 	//Error if not valid URL
 	if (path.extname(stylesheetUrl) != ".css") {
 		res.status(500).send({ error: 'Invalid URL.' });
