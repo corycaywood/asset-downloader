@@ -15,17 +15,16 @@ var http = require('http'),
 	FONT_DIRECTORY = "fonts",
 	IMAGE_DIRECTORY = "images",
 	ZIP_DIRECTORY = "zip",
-	REGEX = /url\([^\)]*?(\.jpg|\.png|\.gif|\.eot|\.woff|\.woff2|\.svg|\.otf|\.ttf)\s?'?\s?\)/ig;
+	REGEX = /url\([^\)]*?(\.jpg|\.png|\.gif|\.eot|\.woff|\.woff2|\.svg|\.otf|\.ttf)\s?'?"?\s?\)/ig;
 
-function downloadFromCssFile(URL_STRING, folder){
-	var BASE_URL = url.parse(URL_STRING).host,
-		FILE_PATH = url.parse(URL_STRING).path,
-		PATH = path.dirname(FILE_PATH) + "/",
-		CSS_FILE = path.basename(FILE_PATH),
+function downloadFromCssFile(url_string, folder){
+	var url_base = url.parse(url_string).host,
+		file_path = url.parse(url_string).path,
+		path_name = path.dirname(file_path) + "/",
 		cssOptions = {
-			host: BASE_URL,
+			host: url_base,
 			port: 80,
-			path: FILE_PATH
+			path: file_path
 		};
 		
 	//Make directories
@@ -48,52 +47,7 @@ function downloadFromCssFile(URL_STRING, folder){
 			if (resources == null) {
 				eventEmitter.emit('noResources' + folder);
 			} else {
-				downloadResource(resources.length - 1);
-			}
-			
-			//Download Resource function
-			function downloadResource(count){
-				var resource = resources[count].replace(/url\((.*?)\)/g, '$1').replace(/\'/g, "").replace(/\"/g, "").replace(/\s/g, ""),
-					host = url.parse(resource).host != null ? url.parse(resource).host : BASE_URL,
-					_path = resource.match(/^\//) != null || url.parse(resource).protocol != null ? "" : PATH;
-				var options = {
-					host: host,
-					port: 80,
-					path: _path + resource
-				}
-				
-				console.log(host + _path + resource);
-	
-				//HTTP request
-				http.get(options, function(res){
-					var resourcedata = '',
-						resourceName = path.basename(resource);
-					res.setEncoding('binary');
-	
-					//On Data
-					res.on('data', function(chunk){
-						resourcedata += chunk;
-					})
-	
-					//On End
-					res.on('end', function(){
-						//Save to correct folder
-						var extName = path.extname(resourceName),
-							resourceFolder = (extName == '.jpg' || extName == '.gif' || extName == '.png') ? IMAGE_DIRECTORY : FONT_DIRECTORY; 
-						//Write file
-						fs.writeFile(path.join(folder, resourceFolder, resourceName), resourcedata, 'binary', function(err){
-							if (err) throw err
-							console.log('File saved: ' + host + _path + resource);
-							//Recursively download - so it will download one at a time
-							if (count > 0) {
-								downloadResource(count - 1)
-							} else {
-								eventEmitter.emit('doneDownloading' + folder);
-							}
-						})
-					})
-	
-				})
+				downloadResources(resources, resources.length - 1, url_base, path_name, folder);
 			}
 		})
 	});
@@ -109,6 +63,54 @@ function saveZip(folder){
 		eventEmitter.emit('doneZipping' + folder);
 	})
 	archive.finalize();
+}
+
+//Download Resources function
+function downloadResources(resources, length, url_base, path_name, folder){
+	downloadResource(length);
+	function downloadResource(count) {
+		var resource = resources[count].replace(/url\((.*?)\)/g, '$1').replace(/\'/g, "").replace(/\"/g, "").replace(/\s/g, ""),
+			host = url.parse(resource).host != null ? url.parse(resource).host : url_base,
+			_path = resource.match(/^\//) != null || url.parse(resource).protocol != null ? "" : path_name;
+		var options = {
+			host: host,
+			port: 80,
+			path: _path + resource
+		}
+		
+		console.log(host + _path + resource);
+	
+		//HTTP request
+		http.get(options, function(res){
+			var resourcedata = '',
+				resourceName = path.basename(resource);
+			res.setEncoding('binary');
+	
+			//On Data
+			res.on('data', function(chunk){
+				resourcedata += chunk;
+			})
+	
+			//On End
+			res.on('end', function(){
+				//Save to correct folder
+				var extName = path.extname(resourceName),
+					resourceFolder = (extName == '.jpg' || extName == '.gif' || extName == '.png') ? IMAGE_DIRECTORY : FONT_DIRECTORY; 
+				//Write file
+				fs.writeFile(path.join(folder, resourceFolder, resourceName), resourcedata, 'binary', function(err){
+					if (err) throw err
+					console.log('File saved: ' + host + _path + resource);
+					//Recursively download - so it will download one at a time
+					if (count > 0) {
+						downloadResource(count - 1)
+					} else {
+						eventEmitter.emit('doneDownloading' + folder);
+					}
+				})
+			})
+	
+		})
+	}
 }
 
 //Server 
